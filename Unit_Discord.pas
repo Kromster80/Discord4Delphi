@@ -212,8 +212,17 @@ begin
   DoLog(Format('SizeOf(activities_events) - %d', [SizeOf(activities_events)]));
   DoLog(Format('SizeOf(relationships_events) - %d', [SizeOf(relationships_events)]));
   DoLog(Format('SizeOf(params) - %d', [SizeOf(params)]));
+  DoLog(Format('SizeOf(TDiscordActivity) - %d', [SizeOf(TDiscordActivity)]));
+
+  err := GetLastError;
+  if err <> 0 then
+    raise Exception.Create(Format('GetLastError - %d', [err]));
 
   res := fDLLDiscordCreate(DISCORD_VERSION, @params, @app.core);
+
+  err := GetLastError;
+  if err <> 0 then
+    raise Exception.Create(Format('GetLastError - %d', [err]));
 
   DoLog(Format('DiscordCreate - %s (%d)', [DiscordResultString[res], Ord(res)]));
 
@@ -226,13 +235,22 @@ begin
 }
 
   app.activities := app.core.get_activity_manager(app.core);
-  app.application := app.core.get_application_manager(app.core);
+
+  err := GetLastError;
+  if err <> 0 then
+    raise Exception.Create(Format('GetLastError - %d', [err]));
+
+  //app.application := app.core.get_application_manager(app.core);
+
+  err := GetLastError;
+  if err <> 0 then
+    raise Exception.Create(Format('GetLastError - %d', [err]));
 
   app.core.set_log_hook(app.core, DiscordLogLevel_Debug, Pointer(5), OnLogHook);
 
-  res := app.core.run_callbacks(app.core);
-
-  DoLog(Format('app.core.run_callbacks - %s (%d)', [DiscordResultString[res], Ord(res)]));
+  err := GetLastError;
+  if err <> 0 then
+    raise Exception.Create(Format('GetLastError - %d', [err]));
 
   fActive := True;
 
@@ -245,21 +263,19 @@ end;
 procedure TDiscord4Delphi.ActivityChange;
 var
   da: TDiscordActivity;
-  res: TDiscordResult;
-  p: TDiscordActivityManagerCallback;
 begin
   da := default(TDiscordActivity);
-  da.&type := DiscordActivityType_Listening;
+  da.&type := DiscordActivityType_Playing;
   da.application_id := fClientId;
   da.name[0] := 'K';
   da.name[1] := '1';
   da.state[0] := 'P';
   da.state[2] := '2';
   da.details[0] := 'c';
-  da.timestamps.start := 0;
-  da.timestamps.&end := 9999999;
-  da.instance := True;
-  da.supported_platforms := 1;
+//  da.timestamps.start := 0;
+//  da.timestamps.&end := 9999999;
+//  da.instance := True;
+//  da.supported_platforms := 0;
 
   app.activities.update_activity(app.activities, @da, Pointer(5), OnActivityCallback);
 end;

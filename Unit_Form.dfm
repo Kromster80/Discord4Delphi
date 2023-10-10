@@ -55,7 +55,6 @@ object Form1: TForm1
     OnClick = Button3Click
   end
   object Timer1: TTimer
-    Interval = 100
     OnTimer = Timer1Timer
     Left = 152
     Top = 24

@@ -166,6 +166,8 @@ typedef int32_t DiscordVersion;
 typedef int64_t DiscordSnowflake;
 typedef int64_t DiscordTimestamp;
 typedef DiscordSnowflake DiscordUserId;
+typedef char DiscordLocale[128];
+typedef char DiscordBranch[4096];
 }
 
   TDiscordClientId = Int64;
@@ -173,8 +175,13 @@ typedef DiscordSnowflake DiscordUserId;
   TDiscordSnowflake = Int64;
   TDiscordTimestamp = Int64;
   TDiscordUserId = TDiscordSnowflake;
+  TDiscordLocale = array [0..127] of UTF8Char;
+  PDiscordLocale = ^TDiscordLocale ;
+  TDiscordBranch = array [0..4095] of UTF8Char;
+  PDiscordBranch = ^TDiscordBranch;
 
-{struct DiscordUser {
+{
+struct DiscordUser {
     DiscordUserId id;
     char username[256];
     char discriminator[8];
@@ -191,10 +198,37 @@ typedef DiscordSnowflake DiscordUserId;
   end;
   PDiscordUser = ^TDiscordUser;
 
+{
+struct DiscordOAuth2Token {
+    char access_token[128];
+    char scopes[1024];
+    DiscordTimestamp expires;
+}
+
+  TDiscordOAuth2Token = record
+    access_token: array [0..127] of UTF8Char;
+    scopes: array [0..1023] of UTF8Char;
+    expires: TDiscordTimestamp;
+  end;
+  PDiscordOAuth2Token = ^TDiscordOAuth2Token;
+
+{
+struct DiscordActivityTimestamps {
+    DiscordTimestamp start;
+    DiscordTimestamp end;
+}
+
   TDiscordActivityTimestamps = record
     start: TDiscordTimestamp;
     &end: TDiscordTimestamp;
   end;
+{
+struct DiscordActivityAssets {
+    char large_image[128];
+    char large_text[128];
+    char small_image[128];
+    char small_text[128];
+}
 
   TDiscordActivityAssets = record
     large_image: array [0..127] of UTF8Char;
@@ -202,6 +236,12 @@ typedef DiscordSnowflake DiscordUserId;
     small_image: array [0..127] of UTF8Char;
     small_text: array [0..127] of UTF8Char;
   end;
+
+{
+struct DiscordPartySize {
+    int32_t current_size;
+    int32_t max_size;
+}
 
   TDiscordPartySize = record
     current_size: Int32;
@@ -246,7 +286,7 @@ typedef DiscordSnowflake DiscordUserId;
     uint32_t supported_platforms;
 }
 
-  TDiscordActivity = record
+  TDiscordActivity = record {1464}
     &type: TDiscordActivityType;
     application_id: Int64;
     name: array [0..127] of UTF8Char;
@@ -297,17 +337,19 @@ struct IDiscordApplicationManager {
 
   PDiscordApplicationManager = ^TDiscordApplicationManager;
   TDiscordCallback = procedure(aCallback_data: Pointer; aResult: TDiscordResult); stdcall;
-  TDiscordvalidate_or_exit = procedure(aManager: PDiscordApplicationManager; callback_data: Pointer; callback: TDiscordCallback); stdcall;
-//  TDiscordget_current_locale = procedure(aManager: PDiscordApplicationManager; aLocale: PDiscordLocale); stdcall;
-//  TDiscordget_current_branch = procedure(aManager: PDiscordApplicationManager; aBranch: PDiscordBranch); stdcall;
-//  TDiscordget_oauth2_token = procedure(aManager: PDiscordApplicationManager; void* callback_data, void (DISCORD_API *callback)(void* callback_data, enum EDiscordResult result, struct DiscordOAuth2Token* oauth2_token)); stdcall;
-//  TDiscordget_ticket = procedure(aManager: PDiscordApplicationManager; void* callback_data, void (DISCORD_API *callback)(void* callback_data, enum EDiscordResult result, const char* data)); stdcall;
+  TDiscordvalidate_or_exit = procedure(aManager: PDiscordApplicationManager; aCallback_data: Pointer; aCallback: TDiscordCallback); stdcall;
+  TDiscordget_current_locale = procedure(aManager: PDiscordApplicationManager; aLocale: PDiscordLocale); stdcall;
+  TDiscordget_current_branch = procedure(aManager: PDiscordApplicationManager; aBranch: PDiscordBranch); stdcall;
+  TDiscordget_oauth2_tokencallback = procedure(aCallback_data: Pointer; aResult: TDiscordResult; aOauth2_token: PDiscordOAuth2Token); stdcall;
+  TDiscordget_oauth2_token = procedure(aManager: PDiscordApplicationManager; aCallback_data: Pointer; aCallback: TDiscordget_oauth2_tokencallback); stdcall;
+  TDiscordget_ticketcallback = procedure(aCallback_data: Pointer; aResult: TDiscordResult; aData: PUTF8Char); stdcall;
+  TDiscordget_ticket = procedure(aManager: PDiscordApplicationManager; aCallback_data: Pointer; aCallback: TDiscordget_ticketcallback); stdcall;
   TDiscordApplicationManager = record
     validate_or_exit: TDiscordvalidate_or_exit;
-    get_current_locale: Pointer;//todo: TDiscordget_current_locale;
-    get_current_branch: Pointer;//todo: TDiscordget_current_branch;
-    get_oauth2_token: Pointer;//todo: TDiscordget_oauth2_token;
-    get_ticket: Pointer;//todo: TDiscordget_ticket;
+    get_current_locale: TDiscordget_current_locale;
+    get_current_branch: TDiscordget_current_branch;
+    get_oauth2_token: TDiscordget_oauth2_token;
+    get_ticket: TDiscordget_ticket;
   end;
 
 {
@@ -378,6 +420,13 @@ struct IDiscordRelationshipEvents {
   PDiscordRelationshipEvents = ^TDiscordRelationshipEvents;
 
 {
+typedef void* IDiscordCoreEvents;
+}
+
+  TDiscordCoreEvents = Pointer;
+  PDiscordCoreEvents = ^TDiscordCoreEvents;
+
+{
 struct IDiscordCore {
     void (DISCORD_API *destroy)(struct IDiscordCore* core);
     enum EDiscordResult (DISCORD_API *run_callbacks)(struct IDiscordCore* core);
@@ -395,7 +444,6 @@ struct IDiscordCore {
     struct IDiscordVoiceManager* (DISCORD_API *get_voice_manager)(struct IDiscordCore* core);
     struct IDiscordAchievementManager* (DISCORD_API *get_achievement_manager)(struct IDiscordCore* core);
 }
-
 
   PDiscordCore = ^TDiscordCore;
   PPDiscordCore = ^PDiscordCore;
@@ -433,13 +481,6 @@ struct IDiscordCore {
     get_voice_manager: TDiscordCoreGet_voice_manager;
     get_achievement_manager: TDiscordCoreGet_achievement_manager;
   end;
-
-{
-typedef void* IDiscordCoreEvents;
-}
-
-  TDiscordCoreEvents = Pointer;
-  PDiscordCoreEvents = ^TDiscordCoreEvents;
 
 {
 struct DiscordCreateParams {
