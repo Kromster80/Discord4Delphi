@@ -1,13 +1,12 @@
 unit Unit_Discord;
 interface
 uses
-  System.SysUtils, System.Variants, System.Classes, Windows,
+  SysUtils, Windows,
   Unit_DiscordTypes;
 
 type
   TDiscord4Delphi = class
   private const
-    //DISCORD_GAME_SDK_DLL_NAME = 'discord_game_sdk 2.5.6.dll';
     DISCORD_GAME_SDK_DLL_NAME = 'discord_game_sdk.dll';
   private
     fOnLog: TProc<string>;
@@ -18,13 +17,12 @@ type
     procedure DoLog(const aText: string);
   public
     constructor Create(aOnLog: TProc<string>);
-    destructor Destroy; override;
 
     procedure InitDiscord;
   end;
 
-
-  {struct Application {
+  {
+  struct Application {
     struct IDiscordCore* core;
     struct IDiscordUserManager* users;
     struct IDiscordAchievementManager* achievements;
@@ -49,6 +47,7 @@ type
   procedure OnRelationshipsRefresh(aEvent_data: Pointer); stdcall;
   procedure OnUserUpdated(aEvent_data: Pointer); stdcall;
 
+
 implementation
 
 
@@ -61,13 +60,6 @@ begin
 
   // Load DLL dynamically, so we could move it into the utility folder
   LoadDLL(DISCORD_GAME_SDK_DLL_NAME);
-end;
-
-
-destructor TDiscord4Delphi.Destroy;
-begin
-
-  inherited;
 end;
 
 
@@ -124,6 +116,7 @@ var
   relationships_events: TDiscordRelationshipEvents;
   params: TDiscordCreateParams;
   res: TDiscordResult;
+  err: Cardinal;
 begin
 {
     struct Application app;
@@ -154,7 +147,7 @@ begin
 {
     struct DiscordCreateParams params;
     DiscordCreateParamsSetDefault(&params);
-    params.client_id = 111111111111111111;
+    params.client_id = 418559331265675294;
     params.flags = DiscordCreateFlags_Default;
     params.event_data = &app;
     params.activity_events = &activities_events;
@@ -165,13 +158,13 @@ begin
 
   params := default(TDiscordCreateParams);
   DiscordCreateParamsSetDefault(params);
-  params.client_id := 111111111111111111;
-  //params.flags := Ord(DiscordCreateFlags_Default);
-  params.flags := Ord(DiscordCreateFlags_NoRequireDiscord);
+  params.client_id := 418559331265675294;
+  params.flags := Ord(DiscordCreateFlags_NoRequireDiscord); // or DiscordCreateFlags_Default
   params.event_data := @app;
-  params.activity_events := @activities_events;
-  params.relationship_events := @relationships_events;
-  params.user_events := @users_events;
+// Not required per https://github.com/discord/discord-api-docs/issues/4298
+//  params.activity_events := @activities_events;
+//  params.relationship_events := @relationships_events;
+//  params.user_events := @users_events;
 
   DoLog(Format('SizeOf(NativeUInt) - %d', [SizeOf(NativeUInt)]));
   DoLog(Format('SizeOf(PNativeUInt) - %d', [SizeOf(PNativeUInt)]));
@@ -186,6 +179,8 @@ begin
 
   res := fDLLDiscordCreate(DISCORD_VERSION, @params, @app.core);
 
+  DoLog(Format('DiscordCreate - %s (%d)', [DiscordResultString[res], Ord(res)]));
+
 {
     app.users = app.core->get_user_manager(app.core);
     app.achievements = app.core->get_achievement_manager(app.core);
@@ -194,7 +189,13 @@ begin
     app.lobbies = app.core->get_lobby_manager(app.core);
 }
 
-  DoLog(Format('DiscordCreate - %s (%d)', [DiscordResultString[res], Ord(res)]));
+  res := app.core.run_callbacks(app.core);
+
+  DoLog(Format('app.core.run_callbacks - %s (%d)', [DiscordResultString[res], Ord(res)]));
+
+  err := GetLastError;
+  if err <> 0 then
+    raise Exception.Create(Format('GetLastError - %d', [err]));
 end;
 
 

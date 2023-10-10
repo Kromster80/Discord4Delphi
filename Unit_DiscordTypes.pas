@@ -1,7 +1,5 @@
 unit Unit_DiscordTypes;
 interface
-uses
-  System.SysUtils, System.Variants, System.Classes;
 
 const
   DISCORD_VERSION = 3;
@@ -161,6 +159,14 @@ type
     DiscordRelationshipType_PendingOutgoing,
     DiscordRelationshipType_Implicit
   );
+
+{
+typedef int64_t DiscordClientId;
+typedef int32_t DiscordVersion;
+typedef int64_t DiscordSnowflake;
+typedef int64_t DiscordTimestamp;
+typedef DiscordSnowflake DiscordUserId;
+}
 
   TDiscordClientId = Int64;
   TDiscordVersion = Int32;
@@ -331,7 +337,8 @@ type
   end;
   PDiscordActivityEvents = ^TDiscordActivityEvents;
 
-{struct IDiscordRelationshipEvents {
+{
+struct IDiscordRelationshipEvents {
     void (DISCORD_API *on_refresh)(void* event_data);
     void (DISCORD_API *on_relationship_update)(void* event_data, struct DiscordRelationship* relationship);
 }
@@ -343,7 +350,8 @@ type
   end;
   PDiscordRelationshipEvents = ^TDiscordRelationshipEvents;
 
-{struct IDiscordCore {
+{
+struct IDiscordCore {
     void (DISCORD_API *destroy)(struct IDiscordCore* core);
     enum EDiscordResult (DISCORD_API *run_callbacks)(struct IDiscordCore* core);
     void (DISCORD_API *set_log_hook)(struct IDiscordCore* core, enum EDiscordLogLevel min_level, void* hook_data, void (DISCORD_API *hook)(void* hook_data, enum EDiscordLogLevel level, const char* message));
@@ -369,42 +377,45 @@ type
   TDiscordLogHook = procedure(aHook_data: Pointer; aLevel: TDiscordLogLevel; aMessage: PUTF8Char); stdcall;
   TDiscordCoreSet_log_hook = procedure(aCore: PDiscordCore; aMin_level: TDiscordLogLevel; aHook_data: Pointer; aHook: TDiscordLogHook); stdcall;
   TDiscordCoreGet_application_manager = function(aCore: PDiscordCore): PDiscordApplicationManager; stdcall;
-  {TDiscordCoreGet_user_manager = function(aCore: PDiscordCore): PDiscordUserManager; stdcall;
-  TDiscordCoreGet_image_manager = function(aCore: PDiscordCore): PDiscordImageManager; stdcall;
-  TDiscordCoreGet_activity_manager = function(aCore: PDiscordCore): PDiscordActivityManager; stdcall;
-  TDiscordCoreGet_relationship_manager = function(aCore: PDiscordCore): PDiscordRelationshipManager; stdcall;
-  TDiscordCoreGet_lobby_manager = function(aCore: PDiscordCore): PDiscordLobbyManager; stdcall;
-  TDiscordCoreGet_network_manager = function(aCore: PDiscordCore): PDiscordNetworkManager; stdcall;
-  TDiscordCoreGet_overlay_manager = function(aCore: PDiscordCore): PDiscordOverlayManager; stdcall;
-  TDiscordCoreGet_storage_manager = function(aCore: PDiscordCore): PDiscordStorageManager; stdcall;
-  TDiscordCoreGet_store_manager = function(aCore: PDiscordCore): PDiscordStoreManager; stdcall;
-  TDiscordCoreGet_voice_manager = function(aCore: PDiscordCore): PDiscordVoiceManager; stdcall;
-  TDiscordCoreGet_achievement_manager = function(aCore: PDiscordCore): PDiscordAchievementManager; stdcall;}
+  TDiscordCoreGet_user_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCoreGet_image_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCoreGet_activity_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCoreGet_relationship_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCoreGet_lobby_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCoreGet_network_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCoreGet_overlay_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCoreGet_storage_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCoreGet_store_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCoreGet_voice_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCoreGet_achievement_manager = function(aCore: PDiscordCore): Pointer; stdcall;
 
-  TDiscordCore = record
+  TDiscordCore = record {60}
     Destroy: TDiscordCoreDestroy;
     run_callbacks: TDiscordCoreRun_callbacks;
     set_log_hook: TDiscordCoreSet_log_hook;
     get_application_manager: TDiscordCoreGet_application_manager;
-    get_user_manager: Pointer;//todo: )(struct IDiscordCore* core);
-    get_image_manager: Pointer;//todo: )(struct IDiscordCore* core);
-    get_activity_manager: Pointer;//todo: )(struct IDiscordCore* core);
-    get_relationship_manager: Pointer;//todo: )(struct IDiscordCore* core);
-    get_lobby_manager: Pointer;//todo: )(struct IDiscordCore* core);
-    get_network_manager: Pointer;//todo: )(struct IDiscordCore* core);
-    get_overlay_manager: Pointer;//todo: )(struct IDiscordCore* core);
-    get_storage_manager: Pointer;//todo: )(struct IDiscordCore* core);
-    get_store_manager: Pointer;//todo: )(struct IDiscordCore* core);
-    get_voice_manager: Pointer;//todo: )(struct IDiscordCore* core);
-    get_achievement_manager: Pointer;//todo: )(struct IDiscordCore* core);   }
+    get_user_manager: TDiscordCoreGet_user_manager;
+    get_image_manager: TDiscordCoreGet_image_manager;
+    get_activity_manager: TDiscordCoreGet_activity_manager;
+    get_relationship_manager: TDiscordCoreGet_relationship_manager;
+    get_lobby_manager: TDiscordCoreGet_lobby_manager;
+    get_network_manager: TDiscordCoreGet_network_manager;
+    get_overlay_manager: TDiscordCoreGet_overlay_manager;
+    get_storage_manager: TDiscordCoreGet_storage_manager;
+    get_store_manager: TDiscordCoreGet_store_manager;
+    get_voice_manager: TDiscordCoreGet_voice_manager;
+    get_achievement_manager: TDiscordCoreGet_achievement_manager;
   end;
 
-{typedef void* IDiscordCoreEvents;}
+{
+typedef void* IDiscordCoreEvents;
+}
 
   TDiscordCoreEvents = Pointer;
   PDiscordCoreEvents = ^TDiscordCoreEvents;
 
-{struct DiscordCreateParams {
+{
+struct DiscordCreateParams {
     DiscordClientId client_id;
     uint64_t flags;
     IDiscordCoreEvents* events;
@@ -435,7 +446,7 @@ type
     DiscordVersion achievement_version;
 }
 
-  TDiscordCreateParams = record {2 * 8 + 26 * 4}
+  TDiscordCreateParams = record {120 = 2 * 8 + 26 * 4}
     Client_id: TDiscordClientId;
     Flags: UInt64;
     Events: PDiscordCoreEvents;
