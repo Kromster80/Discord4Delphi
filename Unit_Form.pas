@@ -27,6 +27,8 @@ implementation
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   fD4D := TDiscord4Delphi.Create(HandleLog);
+
+  Button1Click(nil);
 end;
 
 

@@ -10,6 +10,7 @@ object Form1: TForm1
   Font.Height = -12
   Font.Name = 'Segoe UI'
   Font.Style = []
+  Position = poDesktopCenter
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   DesignSize = (
@@ -21,7 +22,7 @@ object Form1: TForm1
     Top = 8
     Width = 121
     Height = 25
-    Caption = 'Button1'
+    Caption = 'Init Discord'
     TabOrder = 0
     OnClick = Button1Click
   end

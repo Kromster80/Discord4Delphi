@@ -7,6 +7,7 @@ uses
 type
   TDiscord4Delphi = class
   private const
+    //DISCORD_GAME_SDK_DLL_NAME = 'discord_game_sdk 2.5.6.dll';
     DISCORD_GAME_SDK_DLL_NAME = 'discord_game_sdk.dll';
   private
     fOnLog: TProc<string>;
@@ -23,16 +24,30 @@ type
   end;
 
 
+  {struct Application {
+    struct IDiscordCore* core;
+    struct IDiscordUserManager* users;
+    struct IDiscordAchievementManager* achievements;
+    struct IDiscordActivityManager* activities;
+    struct IDiscordRelationshipManager* relationships;
+    struct IDiscordApplicationManager* application;
+    struct IDiscordLobbyManager* lobbies;
+    DiscordUserId user_id;
+  }
+
   TDApplication = record
-    core: IDiscordCore;
-    users: Pointer;//IDiscordUserManager* users;
-    achievements: Pointer;//IDiscordAchievementManager* achievements;
-    activities: Pointer;//IDiscordActivityManager* activities;
-    relationships: Pointer;//IDiscordRelationshipManager* relationships;
-    application: Pointer;//IDiscordApplicationManager* application;
-    lobbies: Pointer;//IDiscordLobbyManager* lobbies;
+    core: PDiscordCore;
+    users: Pointer;
+    achievements: Pointer;
+    activities: Pointer;
+    relationships: Pointer;
+    application: PDiscordApplicationManager;
+    lobbies: Pointer;
     user_id: TDiscordUserId;
   end;
+
+  procedure OnRelationshipsRefresh(aEvent_data: Pointer); stdcall;
+  procedure OnUserUpdated(aEvent_data: Pointer); stdcall;
 
 implementation
 
@@ -89,33 +104,95 @@ begin
 end;
 
 
+procedure OnRelationshipsRefresh(aEvent_data: Pointer);
+begin
+  Assert(False, 'OnRelationshipsRefresh');
+end;
+
+
+procedure OnUserUpdated(aEvent_data: Pointer);
+begin
+  Assert(False, 'OnUserUpdated');
+end;
+
+
 procedure TDiscord4Delphi.InitDiscord;
 var
   app: TDApplication;
+  users_events: TDiscordUserEvents;
+  activities_events: TDiscordActivityEvents;
+  relationships_events: TDiscordRelationshipEvents;
   params: TDiscordCreateParams;
   res: TDiscordResult;
 begin
-  app := default(TDApplication);
-                     {
-  struct IDiscordUserEvents users_events;
-  memset(&users_events, 0, sizeof(users_events));
-  users_events.on_current_user_update = OnUserUpdated;
-  struct IDiscordActivityEvents activities_events;
-  memset(&activities_events, 0, sizeof(activities_events));
-  struct IDiscordRelationshipEvents relationships_events;
-  memset(&relationships_events, 0, sizeof(relationships_events));
-  relationships_events.on_refresh = OnRelationshipsRefresh;
-                                                        }
-  params := default(TDiscordCreateParams);
-  DiscordCreateParamsSetDefault(@params);
-  params.client_id := 418559331265675294;
-  params.flags := Ord(DiscordCreateFlags_Default);
-  params.event_data := @app;
-  params.activity_events := nil;//&activities_events;
-  params.relationship_events := nil;//&relationships_events;
-  params.user_events := nil;//&users_events;
+{
+    struct Application app;
+    memset(&app, 0, sizeof(app));
 
-  res := fDLLDiscordCreate(DISCORD_VERSION, @params, app.core);
+    struct IDiscordUserEvents users_events;
+    memset(&users_events, 0, sizeof(users_events));
+    users_events.on_current_user_update = OnUserUpdated;
+
+    struct IDiscordActivityEvents activities_events;
+    memset(&activities_events, 0, sizeof(activities_events));
+
+    struct IDiscordRelationshipEvents relationships_events;
+    memset(&relationships_events, 0, sizeof(relationships_events));
+    relationships_events.on_refresh = OnRelationshipsRefresh;
+}
+
+  app := default(TDApplication);
+
+  users_events := default(TDiscordUserEvents);
+  users_events.on_current_user_update := OnUserUpdated;
+
+  activities_events := default(TDiscordActivityEvents);
+
+  relationships_events := default(TDiscordRelationshipEvents);
+  relationships_events.on_refresh := OnRelationshipsRefresh;
+
+{
+    struct DiscordCreateParams params;
+    DiscordCreateParamsSetDefault(&params);
+    params.client_id = 111111111111111111;
+    params.flags = DiscordCreateFlags_Default;
+    params.event_data = &app;
+    params.activity_events = &activities_events;
+    params.relationship_events = &relationships_events;
+    params.user_events = &users_events;
+    DISCORD_REQUIRE(DiscordCreate(DISCORD_VERSION, &params, &app.core));
+}
+
+  params := default(TDiscordCreateParams);
+  DiscordCreateParamsSetDefault(params);
+  params.client_id := 111111111111111111;
+  //params.flags := Ord(DiscordCreateFlags_Default);
+  params.flags := Ord(DiscordCreateFlags_NoRequireDiscord);
+  params.event_data := @app;
+  params.activity_events := @activities_events;
+  params.relationship_events := @relationships_events;
+  params.user_events := @users_events;
+
+  DoLog(Format('SizeOf(NativeUInt) - %d', [SizeOf(NativeUInt)]));
+  DoLog(Format('SizeOf(PNativeUInt) - %d', [SizeOf(PNativeUInt)]));
+  DoLog(Format('SizeOf(Pointer) - %d', [SizeOf(Pointer)]));
+  DoLog(Format('SizeOf(PProc) - %d', [SizeOf(@OnUserUpdated)]));
+  DoLog(Format('SizeOf(app) - %d', [SizeOf(app)]));
+  DoLog(Format('SizeOf(app.core^) - %d', [SizeOf(app.core^)]));
+  DoLog(Format('SizeOf(users_events) - %d', [SizeOf(users_events)]));
+  DoLog(Format('SizeOf(activities_events) - %d', [SizeOf(activities_events)]));
+  DoLog(Format('SizeOf(relationships_events) - %d', [SizeOf(relationships_events)]));
+  DoLog(Format('SizeOf(params) - %d', [SizeOf(params)]));
+
+  res := fDLLDiscordCreate(DISCORD_VERSION, @params, @app.core);
+
+{
+    app.users = app.core->get_user_manager(app.core);
+    app.achievements = app.core->get_achievement_manager(app.core);
+    app.activities = app.core->get_activity_manager(app.core);
+    app.application = app.core->get_application_manager(app.core);
+    app.lobbies = app.core->get_lobby_manager(app.core);
+}
 
   DoLog(Format('DiscordCreate - %s (%d)', [DiscordResultString[res], Ord(res)]));
 end;
