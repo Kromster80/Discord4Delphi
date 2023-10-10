@@ -30,7 +30,7 @@ type
 
   TDiscord4Delphi = class
   private const
-    DISCORD_GAME_SDK_DLL_NAME = 'discord_game_sdk.dll';
+    DISCORD_GAME_SDK_DLL_NAME = 'discord_game_sdk 3.2.1.dll';
   private
     fOnLog: TProc<string>;
 
@@ -55,6 +55,7 @@ type
 
   procedure OnRelationshipsRefresh(aEvent_data: Pointer); stdcall;
   procedure OnUserUpdated(aEvent_data: Pointer); stdcall;
+  procedure OnLogHook(aHook_data: Pointer; aLevel: TDiscordLogLevel; aMessage: PUTF8Char); stdcall;
   procedure OnActivityCallback(aCallback_data: Pointer; aResult: TDiscordResult); stdcall;
 
 
@@ -120,19 +121,25 @@ end;
 
 procedure OnRelationshipsRefresh(aEvent_data: Pointer);
 begin
-  Assert(False, 'OnRelationshipsRefresh');
+  sleep(5);
 end;
 
 
 procedure OnUserUpdated(aEvent_data: Pointer);
 begin
-  Assert(False, 'OnUserUpdated');
+  sleep(5);
+end;
+
+
+procedure OnLogHook(aHook_data: Pointer; aLevel: TDiscordLogLevel; aMessage: PUTF8Char);
+begin
+  sleep(5);
 end;
 
 
 procedure OnActivityCallback(aCallback_data: Pointer; aResult: TDiscordResult);
 begin
-  //Assert(False, 'OnActivityCallback');
+  sleep(5);
 end;
 
 
@@ -221,6 +228,8 @@ begin
   app.activities := app.core.get_activity_manager(app.core);
   app.application := app.core.get_application_manager(app.core);
 
+  app.core.set_log_hook(app.core, DiscordLogLevel_Debug, Pointer(5), OnLogHook);
+
   res := app.core.run_callbacks(app.core);
 
   DoLog(Format('app.core.run_callbacks - %s (%d)', [DiscordResultString[res], Ord(res)]));
@@ -241,20 +250,24 @@ var
 begin
   da := default(TDiscordActivity);
   da.&type := DiscordActivityType_Listening;
-  da.timestamps.start := 0;
   da.application_id := fClientId;
   da.name[0] := 'K';
   da.name[1] := '1';
   da.state[0] := 'P';
   da.state[2] := '2';
+  da.details[0] := 'c';
+  da.timestamps.start := 0;
+  da.timestamps.&end := 9999999;
+  da.instance := True;
+  da.supported_platforms := 1;
 
-  app.activities.update_activity(app.activities, @da, nil, OnActivityCallback);
+  app.activities.update_activity(app.activities, @da, Pointer(5), OnActivityCallback);
 end;
 
 
 procedure TDiscord4Delphi.ActivityClear;
 begin
-  app.activities.clear_activity(app.activities, nil, OnActivityCallback);
+  app.activities.clear_activity(app.activities, Pointer(5), OnActivityCallback);
 end;
 
 
