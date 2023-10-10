@@ -47,7 +47,7 @@ type
     constructor Create(aOnLog: TProc<string>);
 
     procedure InitDiscord(aClientId: Int64);
-    procedure ActivityChange;
+    procedure ActivityChange(const aName, aDetail, aState: string);
     procedure ActivityClear;
 
     procedure Callbacks;
@@ -260,18 +260,33 @@ begin
 end;
 
 
-procedure TDiscord4Delphi.ActivityChange;
+procedure TDiscord4Delphi.ActivityChange(const aName, aDetail, aState: string);
 var
   da: TDiscordActivity;
+  I: Integer;
+  s: RawByteString;
 begin
+  Assert(Length(aDetail) >= 3);
+  Assert(Length(aState) >= 3);
+
   da := default(TDiscordActivity);
-  da.&type := DiscordActivityType_Playing;
-  da.application_id := fClientId;
-  da.name[0] := 'K';
-  da.name[1] := '1';
-  da.state[0] := 'P';
-  da.state[2] := '2';
-  da.details[0] := 'c';
+  da.&type := DiscordActivityType_Streaming;
+  //da.application_id := fClientId;
+
+  s := UTF8Encode(aName);
+  for I := 1 to Length(s) do
+    da.name[I-1] := s[I];
+
+  // Goes below
+  s := UTF8Encode(aDetail);
+  for I := 1 to Length(s) do
+    da.state[I-1] := s[I];
+
+  // Goes on top
+  s := UTF8Encode(aState);
+  for I := 1 to Length(s) do
+    da.details[I-1] := s[I];
+
 //  da.timestamps.start := 0;
 //  da.timestamps.&end := 9999999;
 //  da.instance := True;
