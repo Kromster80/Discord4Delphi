@@ -47,7 +47,7 @@ type
     constructor Create(aOnLog: TProc<string>);
 
     procedure InitDiscord(aClientId: Int64);
-    procedure ActivityChange(const aName, aDetail, aState: string);
+    procedure ActivityChange(const aDetail, aState: string; aActivityStart, aActivityEnd: TDateTime);
     procedure ActivityClear;
 
     procedure Callbacks;
@@ -63,11 +63,16 @@ implementation
 uses
   DateUtils;
 
+var
+  fDiscord: TDiscord4Delphi;
+
 
 { TDiscord4Delphi }
 constructor TDiscord4Delphi.Create(aOnLog: TProc<string>);
 begin
   inherited Create;
+
+  fDiscord := Self;
 
   fOnLog := aOnLog;
 
@@ -123,25 +128,25 @@ end;
 
 procedure OnRelationshipsRefresh(aEvent_data: Pointer);
 begin
-  sleep(5);
+  fDiscord.DoLog('OnRelationshipsRefresh');
 end;
 
 
 procedure OnUserUpdated(aEvent_data: Pointer);
 begin
-  sleep(5);
+  fDiscord.DoLog('OnUserUpdated');
 end;
 
 
 procedure OnLogHook(aHook_data: Pointer; aLevel: TDiscordLogLevel; aMessage: PUTF8Char);
 begin
-  sleep(5);
+  fDiscord.DoLog('OnLogHook - ' + aMessage);
 end;
 
 
 procedure OnActivityCallback(aCallback_data: Pointer; aResult: TDiscordResult);
 begin
-  sleep(5);
+  fDiscord.DoLog(Format('OnActivityCallback - %s (%d)', [DiscordResultString[aResult], Ord(aResult)]));
 end;
 
 
@@ -262,37 +267,60 @@ begin
 end;
 
 
-procedure TDiscord4Delphi.ActivityChange(const aName, aDetail, aState: string);
+// Set detail for player activity.
+// Player badge in userlist
+//
+//    Playing %appname%
+//
+// Player info minicard:
+//
+//    %appname%
+//    aState
+//    aDetail
+//    00:00 elapsed/left
+procedure TDiscord4Delphi.ActivityChange(const aDetail, aState: string; aActivityStart, aActivityEnd: TDateTime);
 var
   da: TDiscordActivity;
   I: Integer;
   s: RawByteString;
 begin
-  Assert(Length(aDetail) >= 3);
-  Assert(Length(aState) >= 3);
+  Assert(Length(aDetail) >= 3, 'Needs to be at least 3 char long');
+  Assert(Length(aState) >= 3, 'Needs to be at least 3 char long');
 
   da := default(TDiscordActivity);
-  da.&type := DiscordActivityType_Streaming;
-  //da.application_id := fClientId;
 
-  s := UTF8Encode(aName);
-  for I := 1 to Length(s) do
-    da.name[I-1] := s[I];
+  // Unused
+  //da.&type := DiscordActivityType_Streaming;
 
-  // Goes below
+  // Unused
+  //da.application_id := 418559331265675294;
+
+  // Unused
+  //s := UTF8Encode(aName);
+  //for I := 1 to Length(s) do
+  //  da.name[I-1] := s[I];
+
+  // Third line
   s := UTF8Encode(aDetail);
   for I := 1 to Length(s) do
     da.state[I-1] := s[I];
 
-  // Goes on top
+  // Second line
   s := UTF8Encode(aState);
   for I := 1 to Length(s) do
     da.details[I-1] := s[I];
 
-  da.timestamps.start := DateTimeToUnix(Now - 0.5);
-//  da.timestamps.&end := 9999999;
-//  da.instance := True;
-//  da.supported_platforms := 0;
+  // xx:xx:xx elapsed
+  da.timestamps.start := DateTimeToUnix(aActivityStart, False);
+
+  // xx:xx:xx left
+  da.timestamps.&end := DateTimeToUnix(aActivityEnd, False);
+
+  // Unused?
+  //da.instance := True;
+
+  // Unused?
+  //da.supported_platforms := 3;
 
   app.activities.update_activity(app.activities, @da, Pointer(5), OnActivityCallback);
 end;
@@ -300,6 +328,11 @@ end;
 
 procedure TDiscord4Delphi.ActivityClear;
 begin
+  // Seems to be broken
+  // OnLogHook - ResponseError
+  // { code: InvalidPayload,
+  //   message: "child \"activity\" fails because [child \"supported_platforms\" fails because [\"supported_platforms\" must contain at least 1 items]]" }
+  // OnActivityCallback - InvalidPayload (5)
   app.activities.clear_activity(app.activities, Pointer(5), OnActivityCallback);
 end;
 

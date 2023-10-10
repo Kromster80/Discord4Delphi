@@ -52,7 +52,7 @@ end;
 
 procedure TForm1.Button2Click(Sender: TObject);
 begin
-  fD4D.ActivityChange('SomeName', 'SomeDetails', 'SomeState');
+  fD4D.ActivityChange('SomeDetails', 'SomeState', Now - 1/48, Now + 1/48);
 end;
 
 

@@ -173,7 +173,7 @@ typedef char DiscordBranch[4096];
   TDiscordClientId = Int64;
   TDiscordVersion = Int32;
   TDiscordSnowflake = Int64;
-  TDiscordTimestamp = Int64;
+  TDiscordTimestamp = Int64; // UnixTimestamp
   TDiscordUserId = TDiscordSnowflake;
   TDiscordLocale = array [0..127] of UTF8Char;
   PDiscordLocale = ^TDiscordLocale ;
@@ -222,6 +222,7 @@ struct DiscordActivityTimestamps {
     start: TDiscordTimestamp;
     &end: TDiscordTimestamp;
   end;
+
 {
 struct DiscordActivityAssets {
     char large_image[128];
@@ -248,7 +249,8 @@ struct DiscordPartySize {
     max_size: Int32;
   end;
 
-{struct DiscordActivityParty {
+{
+struct DiscordActivityParty {
     char id[128];
     struct DiscordPartySize size;
     enum EDiscordActivityPartyPrivacy privacy;
@@ -286,7 +288,7 @@ struct DiscordPartySize {
     uint32_t supported_platforms;
 }
 
-  TDiscordActivity = record {1464}
+  TDiscordActivity = record {Size = 1464}
     &type: TDiscordActivityType;
     application_id: Int64;
     name: array [0..127] of UTF8Char;
@@ -337,19 +339,19 @@ struct IDiscordApplicationManager {
 
   PDiscordApplicationManager = ^TDiscordApplicationManager;
   TDiscordCallback = procedure(aCallback_data: Pointer; aResult: TDiscordResult); stdcall;
-  TDiscordvalidate_or_exit = procedure(aManager: PDiscordApplicationManager; aCallback_data: Pointer; aCallback: TDiscordCallback); stdcall;
-  TDiscordget_current_locale = procedure(aManager: PDiscordApplicationManager; aLocale: PDiscordLocale); stdcall;
-  TDiscordget_current_branch = procedure(aManager: PDiscordApplicationManager; aBranch: PDiscordBranch); stdcall;
-  TDiscordget_oauth2_tokencallback = procedure(aCallback_data: Pointer; aResult: TDiscordResult; aOauth2_token: PDiscordOAuth2Token); stdcall;
-  TDiscordget_oauth2_token = procedure(aManager: PDiscordApplicationManager; aCallback_data: Pointer; aCallback: TDiscordget_oauth2_tokencallback); stdcall;
-  TDiscordget_ticketcallback = procedure(aCallback_data: Pointer; aResult: TDiscordResult; aData: PUTF8Char); stdcall;
-  TDiscordget_ticket = procedure(aManager: PDiscordApplicationManager; aCallback_data: Pointer; aCallback: TDiscordget_ticketcallback); stdcall;
+  TDiscord_validate_or_exit = procedure(aManager: PDiscordApplicationManager; aCallback_data: Pointer; aCallback: TDiscordCallback); stdcall;
+  TDiscord_get_current_locale = procedure(aManager: PDiscordApplicationManager; aLocale: PDiscordLocale); stdcall;
+  TDiscord_get_current_branch = procedure(aManager: PDiscordApplicationManager; aBranch: PDiscordBranch); stdcall;
+  TDiscord_get_oauth2_tokencallback = procedure(aCallback_data: Pointer; aResult: TDiscordResult; aOauth2_token: PDiscordOAuth2Token); stdcall;
+  TDiscord_get_oauth2_token = procedure(aManager: PDiscordApplicationManager; aCallback_data: Pointer; aCallback: TDiscord_get_oauth2_tokencallback); stdcall;
+  TDiscord_get_ticketcallback = procedure(aCallback_data: Pointer; aResult: TDiscordResult; aData: PUTF8Char); stdcall;
+  TDiscord_get_ticket = procedure(aManager: PDiscordApplicationManager; aCallback_data: Pointer; aCallback: TDiscord_get_ticketcallback); stdcall;
   TDiscordApplicationManager = record
-    validate_or_exit: TDiscordvalidate_or_exit;
-    get_current_locale: TDiscordget_current_locale;
-    get_current_branch: TDiscordget_current_branch;
-    get_oauth2_token: TDiscordget_oauth2_token;
-    get_ticket: TDiscordget_ticket;
+    validate_or_exit: TDiscord_validate_or_exit;
+    get_current_locale: TDiscord_get_current_locale;
+    get_current_branch: TDiscord_get_current_branch;
+    get_oauth2_token: TDiscord_get_oauth2_token;
+    get_ticket: TDiscord_get_ticket;
   end;
 
 {
@@ -369,15 +371,15 @@ struct IDiscordActivityEvents {
     void (DISCORD_API *on_activity_invite)(void* event_data, enum EDiscordActivityActionType type, struct DiscordUser* user, struct DiscordActivity* activity);
 }
 
-  TDiscordOn_activity_join = procedure(aEvent_data: Pointer; aSecret: PUTF8Char); stdcall;
-  TDiscordOn_activity_spectate = procedure(aEvent_data: Pointer; aSecret: PUTF8Char); stdcall;
-  TDiscordOn_activity_join_request = procedure(aEvent_data: Pointer; aUser: PDiscordUser); stdcall;
-  TDiscordOn_activity_invite = procedure(aEvent_data: Pointer; aType: TDiscordActivityActionType; aUser: PDiscordUser; aActivity: PDiscordActivity); stdcall;
+  TDiscordActivityEvents_on_activity_join = procedure(aEvent_data: Pointer; aSecret: PUTF8Char); stdcall;
+  TDiscordActivityEvents_on_activity_spectate = procedure(aEvent_data: Pointer; aSecret: PUTF8Char); stdcall;
+  TDiscordActivityEvents_on_activity_join_request = procedure(aEvent_data: Pointer; aUser: PDiscordUser); stdcall;
+  TDiscordActivityEvents_on_activity_invite = procedure(aEvent_data: Pointer; aType: TDiscordActivityActionType; aUser: PDiscordUser; aActivity: PDiscordActivity); stdcall;
   TDiscordActivityEvents = record
-    On_activity_join: TDiscordOn_activity_join;
-    On_activity_spectate: TDiscordOn_activity_spectate;
-    On_activity_join_request: TDiscordOn_activity_join_request;
-    On_activity_invite: TDiscordOn_activity_invite;
+    On_activity_join: TDiscordActivityEvents_on_activity_join;
+    On_activity_spectate: TDiscordActivityEvents_on_activity_spectate;
+    On_activity_join_request: TDiscordActivityEvents_on_activity_join_request;
+    On_activity_invite: TDiscordActivityEvents_on_activity_invite;
   end;
   PDiscordActivityEvents = ^TDiscordActivityEvents;
 
@@ -392,15 +394,14 @@ struct IDiscordActivityManager {
     void (DISCORD_API *accept_invite)(struct IDiscordActivityManager* manager, DiscordUserId user_id, void* callback_data, void (DISCORD_API *callback)(void* callback_data, enum EDiscordResult result));
 }
   PDiscordActivityManager = ^TDiscordActivityManager;
-  TDiscordActivityManagerregister_command = function(aManager: PDiscordActivityManager; aCommand: PUTF8Char): TDiscordResult; stdcall;
   TDiscordActivityManagerCallback = procedure(aCallback_data: Pointer; aResult: TDiscordResult); stdcall;
-  TDiscordActivityManagerupdate_activity = procedure(aManager: PDiscordActivityManager; aActivity: PDiscordActivity; aCallback_data: Pointer; aCallback: TDiscordActivityManagerCallback); stdcall;
-  TDiscordActivityManagerclear_activity = procedure(aManager: PDiscordActivityManager; aCallback_data: Pointer; aCallback: TDiscordActivityManagerCallback); stdcall;
+  TDiscordActivityManager_update_activity = procedure(aManager: PDiscordActivityManager; aActivity: PDiscordActivity; aCallback_data: Pointer; aCallback: TDiscordActivityManagerCallback); stdcall;
+  TDiscordActivityManager_clear_activity = procedure(aManager: PDiscordActivityManager; aCallback_data: Pointer; aCallback: TDiscordActivityManagerCallback); stdcall;
   TDiscordActivityManager = record
-    register_command: TDiscordActivityManagerregister_command;
+    register_command: Pointer;
     register_steam: Pointer;
-    update_activity: TDiscordActivityManagerupdate_activity;
-    clear_activity: TDiscordActivityManagerclear_activity;
+    update_activity: TDiscordActivityManager_update_activity;
+    clear_activity: TDiscordActivityManager_clear_activity;
     send_request_reply: Pointer;
     send_invite: Pointer;
     accept_invite: Pointer;
@@ -412,10 +413,10 @@ struct IDiscordRelationshipEvents {
     void (DISCORD_API *on_relationship_update)(void* event_data, struct DiscordRelationship* relationship);
 }
 
-  TDiscordon_relationship_update = procedure(aEvent_data: Pointer; aRelationship: PDiscordRelationship); stdcall;
+  TDiscordRelationshipEvents_on_relationship_update = procedure(aEvent_data: Pointer; aRelationship: PDiscordRelationship); stdcall;
   TDiscordRelationshipEvents = record
     on_refresh: TDiscordEventData;
-    on_relationship_update: TDiscordon_relationship_update;
+    on_relationship_update: TDiscordRelationshipEvents_on_relationship_update;
   end;
   PDiscordRelationshipEvents = ^TDiscordRelationshipEvents;
 
@@ -447,39 +448,39 @@ struct IDiscordCore {
 
   PDiscordCore = ^TDiscordCore;
   PPDiscordCore = ^PDiscordCore;
-  TDiscordCoreDestroy = procedure(aCore: PDiscordCore); stdcall;
-  TDiscordCoreRun_callbacks = function(aCore: PDiscordCore): TDiscordResult; stdcall;
+  TDiscordCore_destroy = procedure(aCore: PDiscordCore); stdcall;
+  TDiscordCore_run_callbacks = function(aCore: PDiscordCore): TDiscordResult; stdcall;
   TDiscordLogHook = procedure(aHook_data: Pointer; aLevel: TDiscordLogLevel; aMessage: PUTF8Char); stdcall;
-  TDiscordCoreSet_log_hook = procedure(aCore: PDiscordCore; aMin_level: TDiscordLogLevel; aHook_data: Pointer; aHook: TDiscordLogHook); stdcall;
-  TDiscordCoreGet_application_manager = function(aCore: PDiscordCore): PDiscordApplicationManager; stdcall;
-  TDiscordCoreGet_user_manager = function(aCore: PDiscordCore): Pointer; stdcall;
-  TDiscordCoreGet_image_manager = function(aCore: PDiscordCore): Pointer; stdcall;
-  TDiscordCoreGet_activity_manager = function(aCore: PDiscordCore): PDiscordActivityManager; stdcall;
-  TDiscordCoreGet_relationship_manager = function(aCore: PDiscordCore): Pointer; stdcall;
-  TDiscordCoreGet_lobby_manager = function(aCore: PDiscordCore): Pointer; stdcall;
-  TDiscordCoreGet_network_manager = function(aCore: PDiscordCore): Pointer; stdcall;
-  TDiscordCoreGet_overlay_manager = function(aCore: PDiscordCore): Pointer; stdcall;
-  TDiscordCoreGet_storage_manager = function(aCore: PDiscordCore): Pointer; stdcall;
-  TDiscordCoreGet_store_manager = function(aCore: PDiscordCore): Pointer; stdcall;
-  TDiscordCoreGet_voice_manager = function(aCore: PDiscordCore): Pointer; stdcall;
-  TDiscordCoreGet_achievement_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCore_set_log_hook = procedure(aCore: PDiscordCore; aMin_level: TDiscordLogLevel; aHook_data: Pointer; aHook: TDiscordLogHook); stdcall;
+  TDiscordCore_get_application_manager = function(aCore: PDiscordCore): PDiscordApplicationManager; stdcall;
+  TDiscordCore_get_user_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCore_get_image_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCore_get_activity_manager = function(aCore: PDiscordCore): PDiscordActivityManager; stdcall;
+  TDiscordCore_get_relationship_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCore_get_lobby_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCore_get_network_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCore_get_overlay_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCore_get_storage_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCore_get_store_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCore_get_voice_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCore_get_achievement_manager = function(aCore: PDiscordCore): Pointer; stdcall;
 
-  TDiscordCore = record {60}
-    Destroy: TDiscordCoreDestroy;
-    run_callbacks: TDiscordCoreRun_callbacks;
-    set_log_hook: TDiscordCoreSet_log_hook;
-    get_application_manager: TDiscordCoreGet_application_manager;
-    get_user_manager: TDiscordCoreGet_user_manager;
-    get_image_manager: TDiscordCoreGet_image_manager;
-    get_activity_manager: TDiscordCoreGet_activity_manager;
-    get_relationship_manager: TDiscordCoreGet_relationship_manager;
-    get_lobby_manager: TDiscordCoreGet_lobby_manager;
-    get_network_manager: TDiscordCoreGet_network_manager;
-    get_overlay_manager: TDiscordCoreGet_overlay_manager;
-    get_storage_manager: TDiscordCoreGet_storage_manager;
-    get_store_manager: TDiscordCoreGet_store_manager;
-    get_voice_manager: TDiscordCoreGet_voice_manager;
-    get_achievement_manager: TDiscordCoreGet_achievement_manager;
+  TDiscordCore = record {Size = 60}
+    destroy: TDiscordCore_destroy;
+    run_callbacks: TDiscordCore_run_callbacks;
+    set_log_hook: TDiscordCore_set_log_hook;
+    get_application_manager: TDiscordCore_get_application_manager;
+    get_user_manager: TDiscordCore_get_user_manager;
+    get_image_manager: TDiscordCore_get_image_manager;
+    get_activity_manager: TDiscordCore_get_activity_manager;
+    get_relationship_manager: TDiscordCore_get_relationship_manager;
+    get_lobby_manager: TDiscordCore_get_lobby_manager;
+    get_network_manager: TDiscordCore_get_network_manager;
+    get_overlay_manager: TDiscordCore_get_overlay_manager;
+    get_storage_manager: TDiscordCore_get_storage_manager;
+    get_store_manager: TDiscordCore_get_store_manager;
+    get_voice_manager: TDiscordCore_get_voice_manager;
+    get_achievement_manager: TDiscordCore_get_achievement_manager;
   end;
 
 {
@@ -514,7 +515,7 @@ struct DiscordCreateParams {
     DiscordVersion achievement_version;
 }
 
-  TDiscordCreateParams = record {120 = 2 * 8 + 26 * 4}
+  TDiscordCreateParams = record {Size = 120 = 2 * 8 + 26 * 4}
     Client_id: TDiscordClientId;
     Flags: UInt64;
     Events: PDiscordCoreEvents;
@@ -553,7 +554,6 @@ struct DiscordCreateParams {
   // void DiscordCreateParamsSetDefault(struct DiscordCreateParams* params)
   procedure DiscordCreateParamsSetDefault(var aParams: TDiscordCreateParams);
 
-  //function DiscordCreate(aVersion: TDiscordVersion; aParams: PDiscordCreateParams; aResult: PPDiscordCore): TDiscordResult; stdcall; external 'discord_game_sdk 2.5.6.dll';
 
 implementation
 
