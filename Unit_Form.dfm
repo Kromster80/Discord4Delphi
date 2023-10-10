@@ -36,4 +36,28 @@ object Form1: TForm1
     ExplicitWidth = 471
     ExplicitHeight = 405
   end
+  object Button2: TButton
+    Left = 8
+    Top = 40
+    Width = 121
+    Height = 25
+    Caption = 'Change activity'
+    TabOrder = 2
+    OnClick = Button2Click
+  end
+  object Button3: TButton
+    Left = 8
+    Top = 72
+    Width = 121
+    Height = 25
+    Caption = 'Clear activity'
+    TabOrder = 3
+    OnClick = Button3Click
+  end
+  object Timer1: TTimer
+    Interval = 100
+    OnTimer = Timer1Timer
+    Left = 152
+    Top = 24
+  end
 end

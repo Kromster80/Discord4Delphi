@@ -261,7 +261,8 @@ typedef DiscordSnowflake DiscordUserId;
   end;
   PDiscordActivity = ^TDiscordActivity;
 
-{struct DiscordPresence {
+{
+struct DiscordPresence {
     enum EDiscordStatus status;
     struct DiscordActivity activity;
 }
@@ -271,7 +272,8 @@ typedef DiscordSnowflake DiscordUserId;
     activity: TDiscordActivity;
   end;
 
-{struct DiscordRelationship {
+{
+struct DiscordRelationship {
     enum EDiscordRelationshipType type;
     struct DiscordUser user;
     struct DiscordPresence presence;
@@ -284,8 +286,8 @@ typedef DiscordSnowflake DiscordUserId;
   end;
   PDiscordRelationship = ^TDiscordRelationship;
 
-
-{ struct IDiscordApplicationManager {
+{
+struct IDiscordApplicationManager {
     void (DISCORD_API *validate_or_exit)(struct IDiscordApplicationManager* manager, void* callback_data, void (DISCORD_API *callback)(void* callback_data, enum EDiscordResult result));
     void (DISCORD_API *get_current_locale)(struct IDiscordApplicationManager* manager, DiscordLocale* locale);
     void (DISCORD_API *get_current_branch)(struct IDiscordApplicationManager* manager, DiscordBranch* branch);
@@ -308,8 +310,8 @@ typedef DiscordSnowflake DiscordUserId;
     get_ticket: Pointer;//todo: TDiscordget_ticket;
   end;
 
-
-{struct IDiscordUserEvents {
+{
+struct IDiscordUserEvents {
     void (DISCORD_API *on_current_user_update)(void* event_data);
 }
   TDiscordEventData = procedure(aEvent_data: Pointer); stdcall;
@@ -317,8 +319,8 @@ typedef DiscordSnowflake DiscordUserId;
     On_current_user_update: TDiscordEventData;
   end;
 
-
-{struct IDiscordActivityEvents {
+{
+struct IDiscordActivityEvents {
     void (DISCORD_API *on_activity_join)(void* event_data, const char* secret);
     void (DISCORD_API *on_activity_spectate)(void* event_data, const char* secret);
     void (DISCORD_API *on_activity_join_request)(void* event_data, struct DiscordUser* user);
@@ -336,6 +338,31 @@ typedef DiscordSnowflake DiscordUserId;
     On_activity_invite: TDiscordOn_activity_invite;
   end;
   PDiscordActivityEvents = ^TDiscordActivityEvents;
+
+{
+struct IDiscordActivityManager {
+    enum EDiscordResult (DISCORD_API *register_command)(struct IDiscordActivityManager* manager, const char* command);
+    enum EDiscordResult (DISCORD_API *register_steam)(struct IDiscordActivityManager* manager, uint32_t steam_id);
+    void (DISCORD_API *update_activity)(struct IDiscordActivityManager* manager, struct DiscordActivity* activity, void* callback_data, void (DISCORD_API *callback)(void* callback_data, enum EDiscordResult result));
+    void (DISCORD_API *clear_activity)(struct IDiscordActivityManager* manager, void* callback_data, void (DISCORD_API *callback)(void* callback_data, enum EDiscordResult result));
+    void (DISCORD_API *send_request_reply)(struct IDiscordActivityManager* manager, DiscordUserId user_id, enum EDiscordActivityJoinRequestReply reply, void* callback_data, void (DISCORD_API *callback)(void* callback_data, enum EDiscordResult result));
+    void (DISCORD_API *send_invite)(struct IDiscordActivityManager* manager, DiscordUserId user_id, enum EDiscordActivityActionType type, const char* content, void* callback_data, void (DISCORD_API *callback)(void* callback_data, enum EDiscordResult result));
+    void (DISCORD_API *accept_invite)(struct IDiscordActivityManager* manager, DiscordUserId user_id, void* callback_data, void (DISCORD_API *callback)(void* callback_data, enum EDiscordResult result));
+}
+  PDiscordActivityManager = ^TDiscordActivityManager;
+  TDiscordActivityManagerregister_command = function(aManager: PDiscordActivityManager; aCommand: PUTF8Char): TDiscordResult; stdcall;
+  TDiscordActivityManagerCallback = procedure(aCallback_data: Pointer; aResult: TDiscordResult); stdcall;
+  TDiscordActivityManagerupdate_activity = procedure(aManager: PDiscordActivityManager; aActivity: PDiscordActivity; aCallback_data: Pointer; aCallback: TDiscordActivityManagerCallback); stdcall;
+  TDiscordActivityManagerclear_activity = procedure(aManager: PDiscordActivityManager; aCallback_data: Pointer; aCallback: TDiscordActivityManagerCallback); stdcall;
+  TDiscordActivityManager = record
+    register_command: TDiscordActivityManagerregister_command;
+    register_steam: Pointer;
+    update_activity: TDiscordActivityManagerupdate_activity;
+    clear_activity: TDiscordActivityManagerclear_activity;
+    send_request_reply: Pointer;
+    send_invite: Pointer;
+    accept_invite: Pointer;
+  end;
 
 {
 struct IDiscordRelationshipEvents {
@@ -379,7 +406,7 @@ struct IDiscordCore {
   TDiscordCoreGet_application_manager = function(aCore: PDiscordCore): PDiscordApplicationManager; stdcall;
   TDiscordCoreGet_user_manager = function(aCore: PDiscordCore): Pointer; stdcall;
   TDiscordCoreGet_image_manager = function(aCore: PDiscordCore): Pointer; stdcall;
-  TDiscordCoreGet_activity_manager = function(aCore: PDiscordCore): Pointer; stdcall;
+  TDiscordCoreGet_activity_manager = function(aCore: PDiscordCore): PDiscordActivityManager; stdcall;
   TDiscordCoreGet_relationship_manager = function(aCore: PDiscordCore): Pointer; stdcall;
   TDiscordCoreGet_lobby_manager = function(aCore: PDiscordCore): Pointer; stdcall;
   TDiscordCoreGet_network_manager = function(aCore: PDiscordCore): Pointer; stdcall;
