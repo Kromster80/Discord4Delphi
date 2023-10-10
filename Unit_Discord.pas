@@ -60,6 +60,8 @@ type
 
 
 implementation
+uses
+  DateUtils;
 
 
 { TDiscord4Delphi }
@@ -287,7 +289,7 @@ begin
   for I := 1 to Length(s) do
     da.details[I-1] := s[I];
 
-//  da.timestamps.start := 0;
+  da.timestamps.start := DateTimeToUnix(Now - 0.5);
 //  da.timestamps.&end := 9999999;
 //  da.instance := True;
 //  da.supported_platforms := 0;
