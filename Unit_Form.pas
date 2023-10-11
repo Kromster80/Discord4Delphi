@@ -69,7 +69,7 @@ end;
 
 procedure TForm1.Timer1Timer(Sender: TObject);
 begin
-  fD4D.Callbacks;
+  fD4D.Update;
 end;
 
 

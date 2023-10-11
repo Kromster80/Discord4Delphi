@@ -21,6 +21,7 @@ type
 
     procedure LoadDLL(const aDLLPath: string);
     procedure DoLog(const aText: string);
+    procedure RunCallbacks;
   public
     constructor Create(aOnLog: TProc<string>);
 
@@ -28,7 +29,7 @@ type
     procedure ActivityChange(const aDetail, aState: string; aActivityStart, aActivityEnd: TDateTime);
     procedure ActivityClear;
 
-    procedure Callbacks;
+    procedure Update;
   end;
 
   procedure OnRelationshipsRefresh(aEvent_data: Pointer); stdcall;
@@ -92,7 +93,7 @@ begin
 end;
 
 
-procedure TDiscord4Delphi.Callbacks;
+procedure TDiscord4Delphi.RunCallbacks;
 var
   res: TDiscordResult;
 begin
@@ -101,6 +102,12 @@ begin
   res := fDiscordCore.run_callbacks(fDiscordCore);
 
   DoLog(Format('fDiscordCore.run_callbacks - %s (%d)', [DiscordResultString[res], Ord(res)]));
+end;
+
+
+procedure TDiscord4Delphi.Update;
+begin
+  RunCallbacks;
 end;
 
 
