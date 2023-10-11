@@ -5,29 +5,6 @@ uses
   Unit_DiscordTypes;
 
 type
-  {
-  struct Application {
-    struct IDiscordCore* core;
-    struct IDiscordUserManager* users;
-    struct IDiscordAchievementManager* achievements;
-    struct IDiscordActivityManager* activities;
-    struct IDiscordRelationshipManager* relationships;
-    struct IDiscordApplicationManager* application;
-    struct IDiscordLobbyManager* lobbies;
-    DiscordUserId user_id;
-  }
-
-  TDApplication = record
-    core: PDiscordCore;
-    users: Pointer;
-    achievements: Pointer;
-    activities: PDiscordActivityManager;
-    relationships: Pointer;
-    application: PDiscordApplicationManager;
-    lobbies: Pointer;
-    user_id: TDiscordUserId;
-  end;
-
   TDiscord4Delphi = class
   private const
     DISCORD_GAME_SDK_DLL_NAME = 'discord_game_sdk 3.2.1.dll';
@@ -39,7 +16,8 @@ type
 
     fActive: Boolean;
     fClientId: Int64;
-    app: TDApplication;
+    fDiscordCore: PDiscordCore;
+    fDiscordActivityManager: PDiscordActivityManager;
 
     procedure LoadDLL(const aDLLPath: string);
     procedure DoLog(const aText: string);
@@ -120,9 +98,9 @@ var
 begin
   if not fActive then Exit;
 
-  res := app.core.run_callbacks(app.core);
+  res := fDiscordCore.run_callbacks(fDiscordCore);
 
-  DoLog(Format('app.core.run_callbacks - %s (%d)', [DiscordResultString[res], Ord(res)]));
+  DoLog(Format('fDiscordCore.run_callbacks - %s (%d)', [DiscordResultString[res], Ord(res)]));
 end;
 
 
@@ -177,8 +155,6 @@ begin
 
   fClientId := aClientId;
 
-  app := default(TDApplication);
-
   users_events := default(TDiscordUserEvents);
   users_events.on_current_user_update := OnUserUpdated;
 
@@ -203,7 +179,7 @@ begin
   DiscordCreateParamsSetDefault(params);
   params.client_id := fClientId;
   params.flags := Ord(DiscordCreateFlags_NoRequireDiscord); // or DiscordCreateFlags_Default
-  params.event_data := @app;
+  params.event_data := Self;
 // Not required per https://github.com/discord/discord-api-docs/issues/4298
 //  params.activity_events := @activities_events;
 //  params.relationship_events := @relationships_events;
@@ -213,8 +189,7 @@ begin
   DoLog(Format('SizeOf(PNativeUInt) - %d', [SizeOf(PNativeUInt)]));
   DoLog(Format('SizeOf(Pointer) - %d', [SizeOf(Pointer)]));
   DoLog(Format('SizeOf(PProc) - %d', [SizeOf(@OnUserUpdated)]));
-  DoLog(Format('SizeOf(app) - %d', [SizeOf(app)]));
-  DoLog(Format('SizeOf(app.core^) - %d', [SizeOf(app.core^)]));
+  DoLog(Format('SizeOf(fDiscordCore^) - %d', [SizeOf(fDiscordCore^)]));
   DoLog(Format('SizeOf(users_events) - %d', [SizeOf(users_events)]));
   DoLog(Format('SizeOf(activities_events) - %d', [SizeOf(activities_events)]));
   DoLog(Format('SizeOf(relationships_events) - %d', [SizeOf(relationships_events)]));
@@ -225,7 +200,7 @@ begin
   if err <> 0 then
     raise Exception.Create(Format('GetLastError - %d', [err]));
 
-  res := fDLLDiscordCreate(DISCORD_VERSION, @params, @app.core);
+  res := fDLLDiscordCreate(DISCORD_VERSION, @params, @fDiscordCore);
 
   err := GetLastError;
   if err <> 0 then
@@ -241,19 +216,19 @@ begin
     app.lobbies = app.core->get_lobby_manager(app.core);
 }
 
-  app.activities := app.core.get_activity_manager(app.core);
+  fDiscordActivityManager := fDiscordCore.get_activity_manager(fDiscordCore);
 
   err := GetLastError;
   if err <> 0 then
     raise Exception.Create(Format('GetLastError - %d', [err]));
 
-  //app.application := app.core.get_application_manager(app.core);
+  //application := fDiscordCore.get_application_manager(fDiscordCore);
 
   err := GetLastError;
   if err <> 0 then
     raise Exception.Create(Format('GetLastError - %d', [err]));
 
-  app.core.set_log_hook(app.core, DiscordLogLevel_Debug, Pointer(5), OnLogHook);
+  fDiscordCore.set_log_hook(fDiscordCore, DiscordLogLevel_Debug, Pointer(5), OnLogHook);
 
   err := GetLastError;
   if err <> 0 then
@@ -322,7 +297,7 @@ begin
   // Unused?
   //da.supported_platforms := 3;
 
-  app.activities.update_activity(app.activities, @da, Pointer(5), OnActivityCallback);
+  fDiscordActivityManager.update_activity(fDiscordActivityManager, @da, Pointer(5), OnActivityCallback);
 end;
 
 
@@ -333,7 +308,7 @@ begin
   // { code: InvalidPayload,
   //   message: "child \"activity\" fails because [child \"supported_platforms\" fails because [\"supported_platforms\" must contain at least 1 items]]" }
   // OnActivityCallback - InvalidPayload (5)
-  app.activities.clear_activity(app.activities, Pointer(5), OnActivityCallback);
+  fDiscordActivityManager.clear_activity(fDiscordActivityManager, Pointer(5), OnActivityCallback);
 end;
 
 
