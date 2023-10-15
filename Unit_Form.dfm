@@ -17,41 +17,32 @@ object Form1: TForm1
     625
     441)
   TextHeight = 15
-  object Button1: TButton
-    Left = 8
-    Top = 8
-    Width = 121
-    Height = 25
-    Caption = 'Init Discord'
-    TabOrder = 0
-    OnClick = Button1Click
-  end
   object meLog: TMemo
     Left = 136
     Top = 8
     Width = 481
     Height = 425
     Anchors = [akLeft, akTop, akRight, akBottom]
-    TabOrder = 1
+    TabOrder = 0
     ExplicitWidth = 471
     ExplicitHeight = 405
   end
   object Button2: TButton
     Left = 8
-    Top = 40
+    Top = 8
     Width = 121
     Height = 25
     Caption = 'Change activity'
-    TabOrder = 2
+    TabOrder = 1
     OnClick = Button2Click
   end
   object Button3: TButton
     Left = 8
-    Top = 72
+    Top = 40
     Width = 121
     Height = 25
     Caption = 'Clear activity'
-    TabOrder = 3
+    TabOrder = 2
     OnClick = Button3Click
   end
   object Timer1: TTimer

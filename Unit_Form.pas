@@ -7,13 +7,11 @@ uses
 
 type
   TForm1 = class(TForm)
-    Button1: TButton;
     meLog: TMemo;
     Button2: TButton;
     Timer1: TTimer;
     Button3: TButton;
     procedure FormCreate(Sender: TObject);
-    procedure Button1Click(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
@@ -32,21 +30,13 @@ implementation
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  fD4D := TDiscord4Delphi.Create(HandleLog);
-
-  Button1Click(nil);
+  fD4D := TDiscord4Delphi.Create({$I client.inc}, HandleLog);
 end;
 
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   FreeAndNil(fD4D);
-end;
-
-
-procedure TForm1.Button1Click(Sender: TObject);
-begin
-  fD4D.InitDiscord({$I client.inc});
 end;
 
 

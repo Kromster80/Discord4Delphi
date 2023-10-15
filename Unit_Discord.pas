@@ -15,27 +15,23 @@ type
     fDLLDiscordCreate: TDLLDiscordCreate;
 
     fActive: Boolean;
-    fClientId: Int64;
+    fApplicationId: Int64;
     fDiscordCore: PDiscordCore;
     fDiscordActivityManager: PDiscordActivityManager;
 
-    procedure LoadDLL(const aDLLPath: string);
     procedure DoLog(const aText: string);
+    procedure LoadDLL(const aDLLPath: string);
+    procedure InitDiscord;
     procedure RunCallbacks;
   public
-    constructor Create(aOnLog: TProc<string>);
+    constructor Create(aApplicationId: Int64; aOnLog: TProc<string>);
+    destructor Destroy; override;
 
-    procedure InitDiscord(aClientId: Int64);
     procedure ActivityChange(const aDetail, aState: string; aActivityStart, aActivityEnd: TDateTime);
     procedure ActivityClear;
 
     procedure Update;
   end;
-
-  procedure OnRelationshipsRefresh(aEvent_data: Pointer); stdcall;
-  procedure OnUserUpdated(aEvent_data: Pointer); stdcall;
-  procedure OnLogHook(aHook_data: Pointer; aLevel: TDiscordLogLevel; aMessage: PUTF8Char); stdcall;
-  procedure OnActivityCallback(aCallback_data: Pointer; aResult: TDiscordResult); stdcall;
 
 
 implementation
@@ -46,23 +42,59 @@ var
   fDiscord: TDiscord4Delphi;
 
 
+procedure OnRelationshipsRefresh(aEvent_data: Pointer); stdcall;
+begin
+  fDiscord.DoLog('OnRelationshipsRefresh');
+end;
+
+
+procedure OnUserUpdated(aEvent_data: Pointer); stdcall;
+begin
+  fDiscord.DoLog('OnUserUpdated');
+end;
+
+
+procedure OnLogHook(aHook_data: Pointer; aLevel: TDiscordLogLevel; aMessage: PUTF8Char); stdcall;
+begin
+  fDiscord.DoLog('OnLogHook - ' + aMessage);
+end;
+
+
+procedure OnActivityCallback(aCallback_data: Pointer; aResult: TDiscordResult); stdcall;
+begin
+  fDiscord.DoLog(Format('OnActivityCallback - %s (%d)', [DiscordResultString[aResult], Ord(aResult)]));
+end;
+
+
 { TDiscord4Delphi }
-constructor TDiscord4Delphi.Create(aOnLog: TProc<string>);
+constructor TDiscord4Delphi.Create(aApplicationId: Int64; aOnLog: TProc<string>);
 begin
   inherited Create;
 
   fDiscord := Self;
 
+  fApplicationId := aApplicationId;
   fOnLog := aOnLog;
 
   // Load DLL dynamically, so we could move it into the utility folder
   LoadDLL(DISCORD_GAME_SDK_DLL_NAME);
+
+  InitDiscord;
+end;
+
+
+destructor TDiscord4Delphi.Destroy;
+begin
+  fActive := False;
+
+  inherited;
 end;
 
 
 procedure TDiscord4Delphi.DoLog(const aText: string);
 begin
-  fOnLog(aText);
+  if Assigned(fOnLog) then
+    fOnLog(aText);
 end;
 
 
@@ -111,31 +143,7 @@ begin
 end;
 
 
-procedure OnRelationshipsRefresh(aEvent_data: Pointer);
-begin
-  fDiscord.DoLog('OnRelationshipsRefresh');
-end;
-
-
-procedure OnUserUpdated(aEvent_data: Pointer);
-begin
-  fDiscord.DoLog('OnUserUpdated');
-end;
-
-
-procedure OnLogHook(aHook_data: Pointer; aLevel: TDiscordLogLevel; aMessage: PUTF8Char);
-begin
-  fDiscord.DoLog('OnLogHook - ' + aMessage);
-end;
-
-
-procedure OnActivityCallback(aCallback_data: Pointer; aResult: TDiscordResult);
-begin
-  fDiscord.DoLog(Format('OnActivityCallback - %s (%d)', [DiscordResultString[aResult], Ord(aResult)]));
-end;
-
-
-procedure TDiscord4Delphi.InitDiscord(aClientId: Int64);
+procedure TDiscord4Delphi.InitDiscord;
 var
   users_events: TDiscordUserEvents;
   activities_events: TDiscordActivityEvents;
@@ -160,8 +168,6 @@ begin
     relationships_events.on_refresh = OnRelationshipsRefresh;
 }
 
-  fClientId := aClientId;
-
   users_events := default(TDiscordUserEvents);
   users_events.on_current_user_update := OnUserUpdated;
 
@@ -184,7 +190,7 @@ begin
 
   params := default(TDiscordCreateParams);
   DiscordCreateParamsSetDefault(params);
-  params.client_id := fClientId;
+  params.client_id := fApplicationId;
   params.flags := Ord(DiscordCreateFlags_NoRequireDiscord); // or DiscordCreateFlags_Default
   params.event_data := Self;
 // Not required per https://github.com/discord/discord-api-docs/issues/4298
@@ -242,10 +248,6 @@ begin
     raise Exception.Create(Format('GetLastError - %d', [err]));
 
   fActive := True;
-
-  err := GetLastError;
-  if err <> 0 then
-    raise Exception.Create(Format('GetLastError - %d', [err]));
 end;
 
 
@@ -266,6 +268,7 @@ var
   I: Integer;
   s: RawByteString;
 begin
+  Assert(fActive);
   Assert(Length(aDetail) >= 3, 'Needs to be at least 3 char long');
   Assert(Length(aState) >= 3, 'Needs to be at least 3 char long');
 
@@ -308,9 +311,11 @@ begin
 end;
 
 
+// Seems to be broken
 procedure TDiscord4Delphi.ActivityClear;
 begin
-  // Seems to be broken
+  Assert(fActive);
+
   // OnLogHook - ResponseError
   // { code: InvalidPayload,
   //   message: "child \"activity\" fails because [child \"supported_platforms\" fails because [\"supported_platforms\" must contain at least 1 items]]" }
