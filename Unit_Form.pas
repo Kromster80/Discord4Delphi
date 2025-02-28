@@ -8,21 +8,18 @@ uses
 type
   TForm1 = class(TForm)
     meLog: TMemo;
-    Button2: TButton;
+    btnChangeActivity: TButton;
     Timer1: TTimer;
-    Button3: TButton;
+    bynClearActivity: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure Button2Click(Sender: TObject);
+    procedure btnChangeActivityClick(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
-    procedure Button3Click(Sender: TObject);
+    procedure bynClearActivityClick(Sender: TObject);
   private
     fD4D: TDiscord4Delphi;
     procedure HandleLog(aText: string);
   end;
-
-var
-  Form1: TForm1;
 
 implementation
 
@@ -40,16 +37,17 @@ begin
 end;
 
 
-procedure TForm1.Button2Click(Sender: TObject);
+procedure TForm1.btnChangeActivityClick(Sender: TObject);
 begin
-  fD4D.ActivityChange('SomeDetails', 'SomeState', Now - 1/48, Now + 1/48);
+  fD4D.ActivityChange('Details of the activity', 'State', Now - 1/48, Now + 1/48);
 end;
 
 
-procedure TForm1.Button3Click(Sender: TObject);
+procedure TForm1.bynClearActivityClick(Sender: TObject);
 begin
   fD4D.ActivityClear;
 end;
+
 
 procedure TForm1.HandleLog(aText: string);
 begin

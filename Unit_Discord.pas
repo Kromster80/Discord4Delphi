@@ -77,9 +77,17 @@ begin
   fOnLog := aOnLog;
 
   // Load DLL dynamically, so we could move it into the utility folder
-  LoadDLL(DISCORD_GAME_SDK_DLL_NAME);
+  try
+    LoadDLL(DISCORD_GAME_SDK_DLL_NAME);
 
-  InitDiscord;
+    InitDiscord;
+  except
+    on E: Exception do
+    begin
+      DoLog(Format('Exception: %s', [E.Message]));
+      fActive := False;
+    end;
+  end;
 end;
 
 
@@ -133,7 +141,8 @@ begin
 
   res := fDiscordCore.run_callbacks(fDiscordCore);
 
-  DoLog(Format('fDiscordCore.run_callbacks - %s (%d)', [DiscordResultString[res], Ord(res)]));
+  if res <> DiscordResult_Ok then
+    DoLog(Format('fDiscordCore.run_callbacks - %s (%d)', [DiscordResultString[res], Ord(res)]));
 end;
 
 
@@ -311,7 +320,7 @@ begin
 end;
 
 
-// Seems to be broken
+// Seems to be broken (also see https://github.com/discord/gamesdk-and-dispatch/issues/114)
 procedure TDiscord4Delphi.ActivityClear;
 begin
   Assert(fActive);

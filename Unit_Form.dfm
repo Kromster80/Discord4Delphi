@@ -1,7 +1,7 @@
 object Form1: TForm1
   Left = 0
   Top = 0
-  Caption = 'Form1'
+  Caption = 'Discord4Delphi test app'
   ClientHeight = 441
   ClientWidth = 625
   Color = clBtnFace
@@ -27,23 +27,23 @@ object Form1: TForm1
     ExplicitWidth = 471
     ExplicitHeight = 405
   end
-  object Button2: TButton
+  object btnChangeActivity: TButton
     Left = 8
     Top = 8
     Width = 121
     Height = 25
     Caption = 'Change activity'
     TabOrder = 1
-    OnClick = Button2Click
+    OnClick = btnChangeActivityClick
   end
-  object Button3: TButton
+  object bynClearActivity: TButton
     Left = 8
     Top = 40
     Width = 121
     Height = 25
     Caption = 'Clear activity'
     TabOrder = 2
-    OnClick = Button3Click
+    OnClick = bynClearActivityClick
   end
   object Timer1: TTimer
     OnTimer = Timer1Timer
